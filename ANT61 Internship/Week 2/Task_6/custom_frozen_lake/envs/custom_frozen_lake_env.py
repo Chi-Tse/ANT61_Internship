@@ -10,6 +10,8 @@ import numpy as np
 from gym import Env, spaces, utils
 from gym.envs.toy_text.utils import categorical_sample
 
+DIR_STATE_FLAG = True
+
 LEFT = 0
 DOWN = 1
 RIGHT = 2
@@ -179,7 +181,7 @@ class FrozenLakeEnv(Env):
             done = bytes(newletter) in b"GH"
             reward = float(newletter == b"G")
             # punishment for falling in hole
-            if (newletter == b"H"): reward = -1
+            if (newletter == b"H"): reward = -0.1
             return newstate, reward, done
 
         # probabilities of position transistion
@@ -202,8 +204,10 @@ class FrozenLakeEnv(Env):
 
         # self.observation_space = spaces.Discrete(nS)
         # observation space modified to only contain adjacent tiles and goal direction features
-        self.observation_space = spaces.Discrete(nO)
-        # self.observation_space = spaces.Tuple((spaces.Discrete(nO), spaces.Discrete(nDir)))
+        
+        if DIR_STATE_FLAG: self.observation_space = spaces.Tuple((spaces.Discrete(nO), spaces.Discrete(nDir)))
+        else: self.observation_space = spaces.Discrete(nO)
+
         self.action_space = spaces.Discrete(nA)
 
         # pygame utils
@@ -278,8 +282,8 @@ class FrozenLakeEnv(Env):
         self.s = s
         self.lastaction = a
         # return (int(s), r, d, {"prob": p})
-        # return (self._check_adjacent(), self._check_direction()), r, d, {"prob": p}
-        return self._check_adjacent(), r, d, {"prob": p}
+        if DIR_STATE_FLAG: return (self._check_adjacent(), self._check_direction()), r, d, {"prob": p}
+        else: return self._check_adjacent(), r, d, {"prob": p}
 
     def reset(
         self,
@@ -295,12 +299,12 @@ class FrozenLakeEnv(Env):
 
         if not return_info:
             # return int(self.s)
-            return (self._check_adjacent())
-            # return (self._check_adjacent(), self._check_direction())
+            if DIR_STATE_FLAG: return (self._check_adjacent(), self._check_direction())
+            else: return (self._check_adjacent())
         else:
             # return int(self.s), {"prob": 1}
-            return (self._check_adjacent()), {"prob": 1}
-            # return (self._check_adjacent(), self._check_direction()), {"prob": 1}
+            if DIR_STATE_FLAG: return (self._check_adjacent(), self._check_direction()), {"prob": 1}
+            else: return (self._check_adjacent()), {"prob": 1}
 
     def render(self, mode="human"):
         desc = self.desc.tolist()
